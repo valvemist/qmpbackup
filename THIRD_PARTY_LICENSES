@@ -1,0 +1,18 @@
+This project uses the following third-party libraries:
+
+1. github.com/digitalocean/go-qemu/qmp
+   License: Apache License 2.0
+   https://www.apache.org/licenses/LICENSE-2.0
+
+2. github.com/tidwall/gjson
+   License: MIT License
+   https://github.com/tidwall/gjson/blob/master/LICENSE
+
+3. github.com/tidwall/pretty
+   License: MIT License
+   https://github.com/tidwall/pretty/blob/master/LICENSE
+
+4. github.com/tidwall/sjson
+   License: MIT License
+   https://github.com/tidwall/sjson/blob/master/LICENSE
+
