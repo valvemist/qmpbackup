@@ -72,3 +72,12 @@ func BuildQueryBlockJSON() string {
 	json, _ = sjson.Set(json, "execute", "query-block")
 	return json
 }
+
+// BuildBlockJobCancelJSON returns the JSON command to cancel a block job
+func BuildBlockJobCancelJSON(cfg Config) string {
+	json := `{}`
+	json, _ = sjson.Set(json, "execute", "block-job-cancel")
+	json, _ = sjson.Set(json, "arguments.device", cfg.DeviceToBackup)
+	json, _ = sjson.Set(json, "arguments.force", true)
+	return json
+}

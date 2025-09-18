@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/digitalocean/go-qemu/qmp"
@@ -44,6 +46,9 @@ func (h *customHandler) WithGroup(_ string) slog.Handler { return h }
 
 // main is the entry point for the backup CLI tool.
 func main() {
+	// catch ctrl-c
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	var verbose bool
 	var cfg qmpbackup.Config
 	flag.BoolVar(&verbose, "v", false, "Verbose output")
@@ -83,7 +88,7 @@ func main() {
 	defer func() {
 		logger.Info("Cleaning up...")
 		if _, err := qmpbackup.RunBlockDevDel(monitor, cfg); err != nil {
-			logger.Warn("Failed to delete node", "error", err)
+			logger.Warn(err.Error())
 		}
 		logger.Info("Program finished.")
 	}()
@@ -94,11 +99,19 @@ func main() {
 	})
 
 	// Run backup workflow
-	if _, err := RunBackupWorkflow(monitor, cfg); err != nil {
-		logger.Error("Workflow failed", "error", err)
+	if _, err := RunBackupWorkflow(cancel, monitor, cfg); err != nil {
+		logger.Error("Workflow failed", err)
 		return
 	}
 
+	go func() {
+		sig := <-sigs
+		fmt.Println("Interrupt received:", sig)
+		if _, err := BlockJobCancel(cancel, monitor, cfg); err != nil {
+			logger.Error(err.Error())
+		}
+		cancel()
+	}()
 	<-ctx.Done()
 }
 

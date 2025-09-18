@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,9 +12,10 @@ import (
 )
 
 // RunBackupWorkflow executes the full backup workflow based on the provided configuration.
-func RunBackupWorkflow(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte, error) {
+func RunBackupWorkflow(cancel context.CancelFunc, monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte, error) {
 	if cfg.CleanBitmap {
 		logger.Info("Cleaning bitmap and exiting")
+		cancel()
 		return qmpbackup.RunBitmapRemove(monitor, cfg)
 	}
 
@@ -29,6 +31,12 @@ func RunBackupWorkflow(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte
 	}
 
 	return []byte("OK"), nil
+}
+
+// BlockJobCancel cancels current background job if exists.
+func BlockJobCancel(cancel context.CancelFunc, monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte, error) {
+	logger.Info("Returning from BlockJobCancel...")
+	return qmpbackup.RunBlockJobCancel(cancel, monitor, cfg)
 }
 
 // AddBlockDeviceEvenIfFileNotExists attempts to add a block device, creating the image if missing.
