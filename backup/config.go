@@ -4,7 +4,7 @@ import "fmt"
 
 // Config holds configuration of backup operation
 type Config struct {
-	CleanBitmap    bool
+	CleanAll       bool
 	SocketFile     string
 	BackupFile     string
 	BackingFile    string

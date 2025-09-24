@@ -4,7 +4,6 @@
 package backup
 
 import (
-	"context"
 	"fmt"
 	"os/exec"
 
@@ -38,7 +37,7 @@ func RunBitmapRemove(monitor *qmp.SocketMonitor, cfg Config) ([]byte, error) {
 }
 
 // RunBitmapRemove removes the bitmap from the QEMU block device as part of cleanup.
-func RunBlockJobCancel(cancel context.CancelFunc, monitor *qmp.SocketMonitor, cfg Config) ([]byte, error) {
+func RunBlockJobCancel(monitor *qmp.SocketMonitor, cfg Config) ([]byte, error) {
 	return RunQMPAndLog(monitor, BuildBlockJobCancelJSON(cfg))
 }
 

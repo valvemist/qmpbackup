@@ -6,18 +6,19 @@ import (
 	"github.com/digitalocean/go-qemu/qmp"
 )
 
-// Events listens for QEMU events and invokes the callback when events are received.
-// It cancels the context when a BLOCK_JOB_COMPLETED event is detected.
-func Events(ctx context.Context, monitor *qmp.SocketMonitor, cancel context.CancelFunc, callback func(event qmp.Event)) {
-	go func() {
-		stream, _ := monitor.Events(ctx)
-		for e := range stream {
-			if callback != nil {
-				callback(e)
+func Events(ctx context.Context, monitor *qmp.SocketMonitor, callback func(qmp.Event)) {
+	stream, _ := monitor.Events(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Debug("Returning from event loop...")
+			return // Exit gracefully if context is cancelled
+		case e, ok := <-stream:
+			if !ok {
+				log.Debug("Event loop stream is closed. Exiting...")
+				return // Exit if the stream is closed
 			}
-			if e.Event == "BLOCK_JOB_COMPLETED" {
-				cancel()
-			}
+			callback(e)
 		}
-	}()
+	}
 }
