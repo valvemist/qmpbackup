@@ -105,14 +105,7 @@ func main() {
 	}
 	doneCh := make(chan struct{})
 	wg.Go(func() {
-		qmpbackup.Events(ctx, monitor, func(event qmp.Event) {
-			logger.Debug("Event received", event.Event, event.Data)
-			handleEvents(event, logger, cfg, func(str string) {
-				logger.Info("From callback:", str)
-				close(doneCh)
-				return
-			})
-		})
+		handleEvents(ctx, monitor, logger, cfg, doneCh)
 	})
 
 	if _, err := RunBackupWorkflow(monitor, cfg); err != nil {
@@ -134,20 +127,24 @@ func main() {
 		}
 	}
 }
-func handleEvents(event qmp.Event, logger *slog.Logger, cfg qmpbackup.Config, callback func(string)) {
-	str := fmt.Sprintf("%s: %v", event.Event, event.Data)
-	switch event.Event {
-	case "BLOCK_JOB_ERROR":
-		logger.Error(fmt.Sprintf("%v. ", event.Data))
-		if strings.Contains(str, "write") {
-			logger.Error(fmt.Sprintf("If running full backup, qcow2 image %s must be empty.", cfg.BackupFile))
+func handleEvents(ctx context.Context, monitor *qmp.SocketMonitor, logger *slog.Logger, cfg qmpbackup.Config, doneCh chan struct{}) {
+	qmpbackup.Events(ctx, monitor, func(event qmp.Event) {
+		logger.Debug("Event received", event.Event, event.Data)
+		str := fmt.Sprintf("%s: %v", event.Event, event.Data)
+		switch event.Event {
+		case "BLOCK_JOB_ERROR":
+			logger.Error(fmt.Sprintf("%v. ", event.Data))
+			if strings.Contains(str, "write") {
+				logger.Error(fmt.Sprintf("If running full backup, qcow2 image %s must be empty.", cfg.BackupFile))
+			}
+
+		case "BLOCK_JOB_COMPLETED":
+			logger.Info("Block job completed, sending info to err ch")
+			logger.Info("From callback:", "BLOCK_JOB_COMPLETED")
+			close(doneCh)
+
+		default:
+			logger.Debug(str)
 		}
-
-	case "BLOCK_JOB_COMPLETED":
-		logger.Info("Block job completed, sending info to err ch")
-		callback("BLOCK_JOB_COMPLETED")
-	default:
-		logger.Debug(str)
-	}
-
+	})
 }

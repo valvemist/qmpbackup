@@ -87,10 +87,10 @@ func HandleMissingFile(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) error {
 		return fmt.Errorf("createQCOW2Image: %s", err)
 	}
 	if _, err := qmpbackup.RunBlockDevDel(monitor, cfg); err != nil {
-		return fmt.Errorf("BlockDevDel failed: %s", err)
+		logger.Info(fmt.Sprintf("BlockDevDel failed: %s", err))
 	}
 	if _, err := qmpbackup.RunBlockDevAdd(monitor, cfg); err != nil {
-		return fmt.Errorf("blockDevAdd failed: %s", err)
+		return fmt.Errorf("blockDevAdd  failed: %s", err)
 	}
 	return nil
 }
