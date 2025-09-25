@@ -123,6 +123,9 @@ func main() {
 			return
 		case sig := <-sigs:
 			fmt.Println("Interrupt received:", sig)
+			if _, err := BlockJobCancel(monitor, cfg); err != nil {
+				logger.Error(err.Error())
+			}
 			return
 		}
 	}
