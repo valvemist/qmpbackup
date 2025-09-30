@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/digitalocean/go-qemu/qmp"
@@ -19,7 +20,11 @@ func RunBackupWorkflow(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte
 			return res, err
 		}
 	}
-
+	if cfg.IncLevel >= 0 { // incremental backup
+		if fileExists(cfg.BackupFile) {
+			return nil, fmt.Errorf("Incremental backup file already exists. Exiting")
+		}
+	}
 	if err := AddBlockDeviceEvenIfFileNotExists(monitor, cfg); err != nil {
 		logger.Info("prepareBackupTarget:", err)
 		return nil, err
@@ -103,4 +108,16 @@ func PushBackup(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte, error
 		return res, err
 	}
 	return qmpbackup.DoIncrementalBackup(monitor, cfg)
+}
+
+// fileExists checks if a file exists and is not a directory.
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false // File does not exist
+	}
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
 }

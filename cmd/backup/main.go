@@ -72,16 +72,13 @@ func main() {
 	// catch ctrl-c
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	level := slog.LevelInfo
-	logger = slog.New(&customHandler{level: level})
-	qmpbackup.SetLogger(logger)
-
 	verbose, cfg := parseFlags()
-
+	level := slog.LevelInfo
 	if verbose {
 		level = slog.LevelDebug
 	}
+	logger = slog.New(&customHandler{level: level})
+	qmpbackup.SetLogger(logger)
 
 	qmpbackup.GenerateBackupFilename(&cfg)
 
@@ -94,9 +91,11 @@ func main() {
 	monitor.Connect()
 	var wg sync.WaitGroup
 	defer func() {
-		cancel()
-		wg.Wait()
+		logger.Info("Disconnecting monitor.")
 		monitor.Disconnect()
+		cancel()
+		logger.Info("Waiting for workgroup to finish")
+		wg.Wait()
 		logger.Info("Program finished.")
 	}()
 	if cfg.CleanAll {
