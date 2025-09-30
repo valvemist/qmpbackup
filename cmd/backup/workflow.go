@@ -5,7 +5,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/digitalocean/go-qemu/qmp"
 	qmpbackup "github.com/valvemist/qmpbackup/backup"
@@ -71,11 +70,9 @@ func BlockDevDel(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte, erro
 // AddBlockDeviceEvenIfFileNotExists attempts to add a block device, creating the image if missing.
 func AddBlockDeviceEvenIfFileNotExists(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) error {
 	if _, err := qmpbackup.RunBlockDevAdd(monitor, cfg); err != nil {
-		if strings.HasSuffix(err.Error(), "No such file or directory") {
-			logger.Info("Missing file detected, attempting to create image", cfg.BackupFile)
-			if err = HandleMissingFile(monitor, cfg); err != nil {
-				return err
-			}
+		logger.Info("Could not add block device: ", err, ". Trying to create a new file", cfg.BackupFile)
+		if err = HandleMissingFile(monitor, cfg); err != nil {
+			return err
 		}
 	}
 	logger.Info("Added block device, continue with backup", cfg.BackupFile)
