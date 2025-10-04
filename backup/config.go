@@ -4,13 +4,15 @@ import "fmt"
 
 // Config holds configuration of backup operation
 type Config struct {
-	CleanAll       bool
-	SocketFile     string
-	BackupFile     string
-	BackingFile    string
-	DeviceToBackup string
-	NodeTarget     string
-	IncLevel       int
+	CleanAll          bool
+	RemoveBitmap      bool
+	DeleteBlockDevice bool
+	SocketFile        string
+	BackupFile        string
+	BackingFile       string
+	DeviceToBackup    string
+	NodeTarget        string
+	IncLevel          int
 }
 
 // GenerateBackupFilename generates a backup filename based on the configuration parameters.

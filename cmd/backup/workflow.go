@@ -34,8 +34,26 @@ func RunBackupWorkflow(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte
 		logger.Info("In case of error with bitmap operation, run program with -clean")
 		return res, err
 	}
-	logger.Info("Backup workflow exiting ")
+	logger.Info("Backup processes started in background ")
 	return []byte("OK"), nil
+}
+
+func RemoveBitmap(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte, error) {
+	logger.Info("Cleaning bitmap bitmap0")
+	res, err := qmpbackup.RunBitmapRemove(monitor, cfg)
+	if err != nil {
+		logger.Info("Removing bitmap failed", err)
+	}
+	return res, err
+}
+
+func DeleteBlockDevice(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte, error) {
+	logger.Info("Deleting block device", cfg.NodeTarget)
+	res, err := BlockDevDel(monitor, cfg)
+	if err != nil {
+		logger.Info("BlockDevDel:", err)
+	}
+	return res, err
 }
 
 func CleanAll(monitor *qmp.SocketMonitor, cfg qmpbackup.Config) ([]byte, error) {

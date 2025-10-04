@@ -54,15 +54,37 @@ func (h *customHandler) WithGroup(_ string) slog.Handler { return h }
 func parseFlags() (verbose bool, cfg qmpbackup.Config) {
 	flag.BoolVar(&verbose, "v", false, "Verbose output")
 	flag.BoolVar(&cfg.CleanAll, "clean", false, "Clean existing backup objects")
+	flag.BoolVar(&cfg.RemoveBitmap, "rb", false, "Remove dirty bitmap")
+	flag.BoolVar(&cfg.DeleteBlockDevice, "dd", false, "Delete block device")
 	flag.StringVar(&cfg.SocketFile, "socket", "", "Path to QMP socket (required)")
 	flag.StringVar(&cfg.BackupFile, "backupFile", "", "Backup file base name (required)")
 	flag.StringVar(&cfg.DeviceToBackup, "device", "drive0", "Device to backup (default: drive0)")
 	flag.IntVar(&cfg.IncLevel, "inc", -1, "Incremental level (-1 means full backup)")
 	flag.Parse()
-	if cfg.SocketFile == "" || cfg.BackupFile == "" {
+	flag.Parse()
+
+	if cfg.RemoveBitmap && cfg.DeleteBlockDevice {
+		fmt.Fprintln(os.Stderr, "Error: -rb and -dbd cannot be used together")
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	// If either -rb or -dbd is set, -socket must be provided
+	if (cfg.RemoveBitmap || cfg.DeleteBlockDevice) && cfg.SocketFile == "" {
+		fmt.Fprintln(os.Stderr, "Error: -socket is required when -rb or -dbd is set")
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	// If neither -rb nor -dbd is set, both -socket and -backupFile are required
+	if !cfg.RemoveBitmap && !cfg.DeleteBlockDevice {
+		if cfg.SocketFile == "" || cfg.BackupFile == "" {
+			fmt.Fprintln(os.Stderr, "Error: -socket and -backupFile are required unless -rb or -dbd is set")
+			flag.Usage()
+			os.Exit(1)
+		}
+	}
+
 	cfg.NodeTarget = "target0-node" // set default NodeTarget
 	return
 }
@@ -98,6 +120,14 @@ func main() {
 		wg.Wait()
 		logger.Info("Program finished.")
 	}()
+	if cfg.DeleteBlockDevice {
+		DeleteBlockDevice(monitor, cfg)
+		return
+	}
+	if cfg.RemoveBitmap {
+		RemoveBitmap(monitor, cfg)
+		return
+	}
 	if cfg.CleanAll {
 		CleanAll(monitor, cfg)
 		return
